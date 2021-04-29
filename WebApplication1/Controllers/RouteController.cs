@@ -20,11 +20,28 @@ namespace WebApplication1.Controllers
         }
 
         // GET: Route
-        public async Task<IActionResult> Index(string sortOrder)
+        public async Task<IActionResult> Index(
+            string sortOrder,
+            string currentFilter,
+            string searchString,
+            int? pageNumber)
         {
+            ViewData["CurrentSort"] = sortOrder;
             ViewData["RouteIDParm"] = String.IsNullOrEmpty(sortOrder) ? "routeID_desc" : "";
             ViewData["LineIDParm"] = sortOrder == "lineID" ? "lineID_desc" : "lineID";
             ViewData["BuggyIDParm"] = sortOrder == "buggyID" ? "buggyID_desc" : "buggyID";
+
+            if (searchString != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+
+            ViewData["CurrentFilter"] = searchString;
+
             var routes = from r in _context.Routes
                            select r;
             switch (sortOrder)
@@ -48,7 +65,9 @@ namespace WebApplication1.Controllers
                     routes = routes.OrderBy(s => s.RouteID);
                     break;
             }
-            return View(await routes.AsNoTracking().ToListAsync());
+
+            int pageSize = 3;
+            return View(await PaginatedList<RouteModel>.CreateAsync(routes.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
 
         // GET: Route/Details/5
