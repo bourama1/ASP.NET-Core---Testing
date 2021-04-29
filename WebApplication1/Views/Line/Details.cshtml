@@ -10,11 +10,33 @@
     <h4>LineModel</h4>
     <hr />
     <dl class="row">
-        <dt class = "col-sm-2">
+        <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.Name)
         </dt>
-        <dd class = "col-sm-10">
+        <dd class="col-sm-10">
             @Html.DisplayFor(model => model.Name)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Routes)
+        </dt>
+        <dd class="col-sm-10">
+            <table class="table">
+                <tr>
+                    <th>Buggy name</th>
+                    <th>Route ID</th>
+                </tr>
+                @foreach (var item in Model.Routes)
+                {
+                    <tr>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Buggy.Name)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.RouteID)
+                        </td>
+                    </tr>
+                }
+            </table>
         </dd>
     </dl>
 </div>

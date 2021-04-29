@@ -20,9 +20,46 @@ namespace WebApplication1.Controllers
         }
 
         // GET: Buggy
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            string sortOrder,
+            string currentFilter,
+            string searchString,
+            int? pageNumber)
         {
-            return View(await _context.Buggies.ToListAsync());
+            ViewData["CurrentSort"] = sortOrder;
+            ViewData["BuggyNameParm"] = String.IsNullOrEmpty(sortOrder) ? "buggyName_desc" : "";
+
+            if (searchString != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+
+            ViewData["CurrentFilter"] = searchString;
+
+            var buggies = from r in _context.Buggies
+                         select r;
+
+            if (!String.IsNullOrEmpty(searchString))
+            {
+                buggies = buggies.Where(s => s.Name.Contains(searchString));
+            }
+
+            switch (sortOrder)
+            {
+                case "buggyName_desc":
+                    buggies = buggies.OrderByDescending(s => s.Name);
+                    break;
+                default:
+                    buggies = buggies.OrderBy(s => s.Name);
+                    break;
+            }
+
+            int pageSize = 3;
+            return View(await PaginatedList<BuggyModel>.CreateAsync(buggies.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
 
         // GET: Buggy/Details/5
@@ -34,7 +71,11 @@ namespace WebApplication1.Controllers
             }
 
             var buggyModel = await _context.Buggies
+                .Include(s => s.Routes)
+                .ThenInclude(e => e.Line)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.BuggyID == id);
+
             if (buggyModel == null)
             {
                 return NotFound();
@@ -56,11 +97,21 @@ namespace WebApplication1.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("BuggyID,Name")] BuggyModel buggyModel)
         {
-            if (ModelState.IsValid)
+            try
             {
-                _context.Add(buggyModel);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                if (ModelState.IsValid)
+                {
+                    _context.Add(buggyModel);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+            catch (DbUpdateException /* ex */)
+            {
+                //Log the error (uncomment ex variable name and write a log.
+                ModelState.AddModelError("", "Unable to save changes. " +
+                    "Try again, and if the problem persists " +
+                    "see your system administrator.");
             }
             return View(buggyModel);
         }
@@ -117,7 +168,7 @@ namespace WebApplication1.Controllers
         }
 
         // GET: Buggy/Delete/5
-        public async Task<IActionResult> Delete(int? id)
+        public async Task<IActionResult> Delete(int? id, bool? saveChangesError = false)
         {
             if (id == null)
             {
@@ -125,10 +176,18 @@ namespace WebApplication1.Controllers
             }
 
             var buggyModel = await _context.Buggies
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.BuggyID == id);
             if (buggyModel == null)
             {
                 return NotFound();
+            }
+
+            if (saveChangesError.GetValueOrDefault())
+            {
+                ViewData["ErrorMessage"] =
+                    "Delete failed. Try again, and if the problem persists " +
+                    "see your system administrator.";
             }
 
             return View(buggyModel);
@@ -140,9 +199,22 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var buggyModel = await _context.Buggies.FindAsync(id);
-            _context.Buggies.Remove(buggyModel);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            if (buggyModel == null)
+            {
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                _context.Buggies.Remove(buggyModel);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            catch (DbUpdateException /* ex */)
+            {
+                //Log the error (uncomment ex variable name and write a log.)
+                return RedirectToAction(nameof(Delete), new { id = id, saveChangesError = true });
+            }
         }
 
         private bool BuggyModelExists(int id)

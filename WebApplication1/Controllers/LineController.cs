@@ -20,9 +20,46 @@ namespace WebApplication1.Controllers
         }
 
         // GET: Line
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            string sortOrder,
+            string currentFilter,
+            string searchString,
+            int? pageNumber)
         {
-            return View(await _context.Lines.ToListAsync());
+            ViewData["CurrentSort"] = sortOrder;
+            ViewData["LineNameParm"] = String.IsNullOrEmpty(sortOrder) ? "lineName_desc" : "";
+
+            if (searchString != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+
+            ViewData["CurrentFilter"] = searchString;
+
+            var lines = from r in _context.Lines
+                          select r;
+
+            if (!String.IsNullOrEmpty(searchString))
+            {
+                lines = lines.Where(s => s.Name.Contains(searchString));
+            }
+
+            switch (sortOrder)
+            {
+                case "lineName_desc":
+                    lines = lines.OrderByDescending(s => s.Name);
+                    break;
+                default:
+                    lines = lines.OrderBy(s => s.Name);
+                    break;
+            }
+
+            int pageSize = 3;
+            return View(await PaginatedList<LineModel>.CreateAsync(lines.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
 
         // GET: Line/Details/5
@@ -33,8 +70,13 @@ namespace WebApplication1.Controllers
                 return NotFound();
             }
 
+
             var lineModel = await _context.Lines
+                .Include(s => s.Routes)
+                    .ThenInclude(e => e.Buggy)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.ID == id);
+
             if (lineModel == null)
             {
                 return NotFound();
@@ -54,13 +96,23 @@ namespace WebApplication1.Controllers
         // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ID,Name")] LineModel lineModel)
+        public async Task<IActionResult> Create([Bind("Name")] LineModel lineModel)
         {
-            if (ModelState.IsValid)
+            try
             {
-                _context.Add(lineModel);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                if (ModelState.IsValid)
+                {
+                    _context.Add(lineModel);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+            catch (DbUpdateException /* ex */)
+            {
+                //Log the error (uncomment ex variable name and write a log.
+                ModelState.AddModelError("", "Unable to save changes. " +
+                    "Try again, and if the problem persists " +
+                    "see your system administrator.");
             }
             return View(lineModel);
         }
@@ -117,7 +169,7 @@ namespace WebApplication1.Controllers
         }
 
         // GET: Line/Delete/5
-        public async Task<IActionResult> Delete(int? id)
+        public async Task<IActionResult> Delete(int? id, bool? saveChangesError = false)
         {
             if (id == null)
             {
@@ -125,10 +177,18 @@ namespace WebApplication1.Controllers
             }
 
             var lineModel = await _context.Lines
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.ID == id);
             if (lineModel == null)
             {
                 return NotFound();
+            }
+
+            if (saveChangesError.GetValueOrDefault())
+            {
+                ViewData["ErrorMessage"] =
+                    "Delete failed. Try again, and if the problem persists " +
+                    "see your system administrator.";
             }
 
             return View(lineModel);
@@ -140,9 +200,22 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var lineModel = await _context.Lines.FindAsync(id);
-            _context.Lines.Remove(lineModel);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            if (lineModel == null)
+            {
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                _context.Lines.Remove(lineModel);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            catch (DbUpdateException /* ex */)
+            {
+                //Log the error (uncomment ex variable name and write a log.)
+                return RedirectToAction(nameof(Delete), new { id = id, saveChangesError = true });
+            }
         }
 
         private bool LineModelExists(int id)
