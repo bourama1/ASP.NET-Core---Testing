@@ -43,9 +43,18 @@ namespace WebApplication1.Controllers
             var lines = from r in _context.Lines
                           select r;
 
+            ViewBag.lines = new SelectList(lines, "ID", "Name");
+
             if (!String.IsNullOrEmpty(searchString))
             {
                 lines = lines.Where(s => s.Name.Contains(searchString));
+            }
+
+            String selectedLine = Request.Query["selected_line"].ToString();
+
+            if (!String.IsNullOrEmpty(selectedLine))
+            {
+                lines = lines.Where(s => s.ID.Equals(Convert.ToInt32(selectedLine)));
             }
 
             switch (sortOrder)
