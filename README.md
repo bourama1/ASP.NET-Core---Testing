@@ -14,4 +14,48 @@ a poté ve view
 ```
 
 ## Gridy
-### 1. Odkaz
+S použitím EntityFrameworku lze vygenerovat controller a základní view(Create, Delete, Details, Edit, Index) automaticky z vytvořeného modelu. 
+### 1. Odkaz na edit
+```cs
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Name)
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.ID">Edit</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+```
+V odpovídajícím kontroleru je třeba mít GET metodu Edit.
+  ```cs
+public async Task<IActionResult> Edit(int? id)
+```
+### 2. Sort
+Přidáme do kontroleru switch na různé možnosti sortování
+  ```cs
+public async Task<IActionResult> Index(string sortOrder)
+{
+    ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+    var students = from s in _context.Students
+                   select s;
+    switch (sortOrder)
+    {
+        case "name_desc":
+            students = students.OrderByDescending(s => s.LastName);
+            break;
+        default:
+            students = students.OrderBy(s => s.LastName);
+            break;
+    }
+    return View(await students.AsNoTracking().ToListAsync());
+}
+```
+Které předáváme z view 
+  ```cs
+<a asp-action="Index" asp-route-sortOrder="@ViewData["NameSortParm"]">@Html.DisplayNameFor(model => model.LastName)</a>
+```
