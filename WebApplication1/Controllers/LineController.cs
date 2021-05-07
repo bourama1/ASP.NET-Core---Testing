@@ -22,33 +22,16 @@ namespace WebApplication1.Controllers
         // GET: Line
         public async Task<IActionResult> Index(
             string sortOrder,
-            string currentFilter,
-            string searchString,
             int? pageNumber)
         {
             ViewData["CurrentSort"] = sortOrder;
             ViewData["LineNameParm"] = String.IsNullOrEmpty(sortOrder) ? "lineName_desc" : "";
-
-            if (searchString != null)
-            {
-                pageNumber = 1;
-            }
-            else
-            {
-                searchString = currentFilter;
-            }
-
-            ViewData["CurrentFilter"] = searchString;
 
             var lines = from r in _context.Lines
                           select r;
 
             ViewBag.lines = new SelectList(lines, "ID", "Name");
 
-            if (!String.IsNullOrEmpty(searchString))
-            {
-                lines = lines.Where(s => s.Name.Contains(searchString));
-            }
 
             String selectedLine = Request.Query["selected_line"].ToString();
 
