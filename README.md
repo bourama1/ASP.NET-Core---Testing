@@ -32,12 +32,12 @@ S použitím EntityFrameworku lze vygenerovat controller a základní view(Creat
     </tbody>
 ```
 V odpovídajícím kontroleru je třeba mít GET metodu Edit.
-  ```cs
+```cs
 public async Task<IActionResult> Edit(int? id)
 ```
 ### 2. Sort
 Přidáme do kontroleru switch na různé možnosti sortování
-  ```cs
+```cs
 public async Task<IActionResult> Index(string sortOrder)
 {
     ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
@@ -58,4 +58,117 @@ public async Task<IActionResult> Index(string sortOrder)
 Které předáváme z view 
   ```cs
 <a asp-action="Index" asp-route-sortOrder="@ViewData["NameSortParm"]">@Html.DisplayNameFor(model => model.LastName)</a>
+```
+### 3. Strankování
+#### Je třeba vytvořit třídu PaginatedList.cs
+  ```cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+
+namespace ContosoUniversity
+{
+    public class PaginatedList<T> : List<T>
+    {
+        public int PageIndex { get; private set; }
+        public int TotalPages { get; private set; }
+
+        public PaginatedList(List<T> items, int count, int pageIndex, int pageSize)
+        {
+            PageIndex = pageIndex;
+            TotalPages = (int)Math.Ceiling(count / (double)pageSize);
+
+            this.AddRange(items);
+        }
+
+        public bool HasPreviousPage
+        {
+            get
+            {
+                return (PageIndex > 1);
+            }
+        }
+
+        public bool HasNextPage
+        {
+            get
+            {
+                return (PageIndex < TotalPages);
+            }
+        }
+
+        public static async Task<PaginatedList<T>> CreateAsync(IQueryable<T> source, int pageIndex, int pageSize)
+        {
+            var count = await source.CountAsync();
+            var items = await source.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+            return new PaginatedList<T>(items, count, pageIndex, pageSize);
+        }
+    }
+}
+```
+#### Controller
+Poté si do parametrů metody v controlleru zobrazující daný grid přídáme a také přidáme hodnotu aktuálního sortu
+```cs
+public async Task<IActionResult> Index(
+            string sortOrder,
+            int? pageNumber)
+        {
+            ViewData["CurrentSort"] = sortOrder;
+```
+a na konci této metody si určíme velikost stránkování a předáme view model
+```cs
+int pageSize = 3;
+return View(await PaginatedList<LineModel>.CreateAsync(lines.AsNoTracking(), pageNumber ?? 1, pageSize));
+```      
+#### View
+Nejdříve změníme typ modelu na
+```cs
+@model PaginatedList<WebApplication1.Models.LineModel>
+```
+a na konec view přidáme odkazy na pohybování mezi stránkami
+```cs
+@{
+    var prevDisabled = !Model.HasPreviousPage ? "disabled" : "";
+    var nextDisabled = !Model.HasNextPage ? "disabled" : "";
+}
+
+<a asp-action="Index"
+   asp-route-sortOrder="@ViewData["CurrentSort"]"
+   asp-route-pageNumber="@(Model.PageIndex - 1)"
+   class="btn btn-default @prevDisabled">
+    Previous
+</a>
+<a asp-action="Index"
+   asp-route-sortOrder="@ViewData["CurrentSort"]"
+   asp-route-pageNumber="@(Model.PageIndex + 1)"
+   class="btn btn-default @nextDisabled">
+    Next
+</a>
+```
+### 4. Filtr
+Do controlleru přidáme viewbag s výběrem itemů dle kterých chceme filtrovat a pak samotnou filtraci
+```cs
+ViewBag.lines = new SelectList(lines, "ID", "Name");
+
+String selectedLine = Request.Query["selected_line"].ToString();
+
+if (!String.IsNullOrEmpty(selectedLine))
+{
+    lines = lines.Where(s => s.ID.Equals(Convert.ToInt32(selectedLine)));
+}
+```
+Do view poté přidáme formulář s daným viewbagem
+```html
+<form asp-action="Index" method="get">
+    <div class="form-actions no-color">
+        <p>
+            Filters:
+            <select name="selected_line" asp-items="ViewBag.lines"></select>
+        </p>
+    </div>
+    <input type="submit" value="Search" class="btn btn-default" /> |
+    <a asp-action="Index">Back to Full List</a>
+</form>
 ```
