@@ -196,3 +196,4 @@ string username = HttpContext.User.Identity.Name;
 string auth = HttpContext.User.Identity.AuthenticationType;
 IEnumerable<Claim> claims = HttpContext.User.Claims;
 ```
+K přidání informace o času přihlášení bude nejspíš potřeba vytvořit třídu z IdentityUser a přidat si do ní požadované vlastnosti, viz https://docs.microsoft.com/cs-cz/aspnet/core/security/authentication/add-user-data?view=aspnetcore-3.1&tabs=visual-studio
