@@ -172,3 +172,27 @@ Do view poté přidáme formulář s daným viewbagem
     <a asp-action="Index">Back to Full List</a>
 </form>
 ```
+## Auth
+### 1. Kontrola práv - Anotace
+Do Startup.cs přidáme k options autorizace danou roli
+```cs
+services.AddAuthorization(options =>
+    {
+        options.AddPolicy("EmployeeOnly", policy => policy.RequireClaim("EmployeeNumber"));
+    });
+```
+poté v controlleru ověřujeme anotací
+```cs
+[Authorize(Policy = "EmployeeOnly")]
+```
+### 2. Info o uživateli
+Přímo ve view lze získat např. username takto
+```cs
+@Context.User.Identity.Name
+```
+V controlleru získáváme info obdobně
+```cs
+string username = HttpContext.User.Identity.Name;
+string auth = HttpContext.User.Identity.AuthenticationType;
+IEnumerable<Claim> claims = HttpContext.User.Claims;
+```
