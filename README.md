@@ -208,7 +208,7 @@ Poté lze v kontroleru využít DbSet<TEntity>.FromSqlRaw() nebo FromSqlInterpol
 ```cs
 var name = "ex";
 
-var blogs = context.Lines
+var lines = context.Lines
     .FromSqlRaw("EXECUTE dbo.Procedure {0}", name)
     .ToList();
 ```
