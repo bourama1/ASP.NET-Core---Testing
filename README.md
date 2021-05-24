@@ -225,3 +225,4 @@ V POST poté ukládáme opět přes DbContext
 _context.Update(lineModel);
 await _context.SaveChangesAsync();
 ```
+Při editaci dat z procedury by bylo třeba využít metodu FromSqlRaw místo FindAsync
