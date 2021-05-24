@@ -214,3 +214,14 @@ var lines = context.Lines
 ```
 zavolá proceduru Procedure s parametrem name.
 Když je potřeba zobrazit hodnoty z více tabulek bude nutné vytvořit classu, která bude obsahovat všechny vlastnosti, které nám daná procedura vrací. Tu poté také přidáme do DbContextu a v kontroleru obdobně zavoláme.
+
+### 2. Edit
+    V GET získáme model toho co chceme upravovat takto
+    ```cs
+    var lineModel = await _context.Lines.FindAsync(id);
+    ```
+    V POST poté ukládáme opět přes DbContext
+    ```cs
+    _context.Update(lineModel);
+    await _context.SaveChangesAsync();
+    ```
