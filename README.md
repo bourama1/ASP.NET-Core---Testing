@@ -197,3 +197,19 @@ string auth = HttpContext.User.Identity.AuthenticationType;
 IEnumerable<Claim> claims = HttpContext.User.Claims;
 ```
 K přidání informace o času přihlášení bude nejspíš potřeba vytvořit třídu z IdentityUser a přidat si do ní požadované vlastnosti, viz https://docs.microsoft.com/cs-cz/aspnet/core/security/authentication/add-user-data?view=aspnetcore-3.1&tabs=visual-studio
+
+## Entity Framework
+Je potřeba udělat implementaci DbContext a přidat do ní DbSet<> pro modely
+```cs
+    public DbSet<LineModel> Lines{ get; set; }
+```
+### 1. Procedura jako zdroj dat
+Poté lze v kontroleru využít DbSet<TEntity>.FromSql() metodu pro získání dat z uložených procedur. Např.
+```cs
+var name = "example";
+var context = new DatabaseContext(); 
+var lines = context.Lines
+                   .FromSql($"GetLines {name}")
+                   .ToList();
+```
+zavolá proceduru GetLines s parametrem name.
