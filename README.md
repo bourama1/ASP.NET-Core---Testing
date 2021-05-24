@@ -201,15 +201,16 @@ K přidání informace o času přihlášení bude nejspíš potřeba vytvořit 
 ## Entity Framework
 Je potřeba udělat implementaci DbContext a přidat do ní DbSet<> pro modely
 ```cs
-    public DbSet<LineModel> Lines{ get; set; }
+public DbSet<LineModel> Lines{ get; set; }
 ```
 ### 1. Procedura jako zdroj dat
-Poté lze v kontroleru využít DbSet<TEntity>.FromSql() metodu pro získání dat z uložených procedur. Např.
+Poté lze v kontroleru využít DbSet<TEntity>.FromSqlRaw() nebo FromSqlInterpolated() metodu pro získání dat z uložených procedur. Např.
 ```cs
-var name = "example";
-var context = new DatabaseContext(); 
-var lines = context.Lines
-                   .FromSql($"GetLines {name}")
-                   .ToList();
+var name = "ex";
+
+var blogs = context.Lines
+    .FromSqlRaw("EXECUTE dbo.Procedure {0}", name)
+    .ToList();
 ```
-zavolá proceduru GetLines s parametrem name.
+zavolá proceduru Procedure s parametrem name.
+Když je potřeba zobrazit hodnoty z více tabulek bude nutné vytvořit classu, která bude obsahovat všechny vlastnosti, které nám daná procedura vrací. Tu poté také přidáme do DbContextu a v kontroleru obdobně zavoláme.
