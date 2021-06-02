@@ -8,6 +8,7 @@
 
 <p>
     <a asp-action="Create">Create New</a>
+    <a asp-action="DownloadExcelDocument">Download Table</a>
 </p>
 
 <form asp-action="Index" method="get">
@@ -69,6 +70,6 @@
     string message = TempData["Message"] as string;
     if (message != null)
     {
-        <div>@message</div>
+        <div class="alert-info">@message</div>
     }
 }

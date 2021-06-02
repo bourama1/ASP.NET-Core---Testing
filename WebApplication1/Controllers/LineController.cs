@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -52,6 +54,33 @@ namespace WebApplication1.Controllers
             int pageSize = 3;
             //var line = _context.Lines.FromSqlRaw("EXECUTE dbo.Procedure").ToList();
             return View(await PaginatedList<LineModel>.CreateAsync(lines.AsNoTracking(), pageNumber ?? 1, pageSize));
+        }
+
+        public IActionResult DownloadExcelDocument()
+        {
+            var lines = from r in _context.Lines
+                        select r;
+
+            string contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            string fileName = "lines.xlsx";
+            using (var workbook = new XLWorkbook())
+                {
+                    IXLWorksheet worksheet =
+                    workbook.Worksheets.Add("Lines");
+                    worksheet.Cell(1, 1).Value = "Id";
+                    worksheet.Cell(1, 2).Value = "Name";
+                    for (int index = 1; index <= lines.Count(); index++)
+                    {
+                        worksheet.Cell(index + 1, 1).Value = lines.FirstOrDefault(m => m.ID == index).ID;
+                        worksheet.Cell(index + 1, 2).Value = lines.FirstOrDefault(m => m.ID == index).Name;
+                    }
+                    using (var stream = new MemoryStream())
+                    {
+                        workbook.SaveAs(stream);
+                        var content = stream.ToArray();
+                        return File(content, contentType, fileName);
+                    }
+                }
         }
 
         // GET: Line/Details/5
