@@ -172,3 +172,57 @@ Do view poté přidáme formulář s daným viewbagem
     <a asp-action="Index">Back to Full List</a>
 </form>
 ```
+## Auth
+### 1. Kontrola práv - Anotace
+Do Startup.cs přidáme k options autorizace danou roli
+```cs
+services.AddAuthorization(options =>
+    {
+        options.AddPolicy("EmployeeOnly", policy => policy.RequireClaim("EmployeeNumber"));
+    });
+```
+poté v controlleru ověřujeme anotací
+```cs
+[Authorize(Policy = "EmployeeOnly")]
+```
+### 2. Info o uživateli
+Přímo ve view lze získat např. username takto
+```cs
+@Context.User.Identity.Name
+```
+V controlleru získáváme info obdobně
+```cs
+string username = HttpContext.User.Identity.Name;
+string auth = HttpContext.User.Identity.AuthenticationType;
+IEnumerable<Claim> claims = HttpContext.User.Claims;
+```
+K přidání informace o času přihlášení bude nejspíš potřeba vytvořit třídu z IdentityUser a přidat si do ní požadované vlastnosti, viz https://docs.microsoft.com/cs-cz/aspnet/core/security/authentication/add-user-data?view=aspnetcore-3.1&tabs=visual-studio
+
+## Entity Framework
+Je potřeba udělat implementaci DbContext a přidat do ní DbSet<> pro modely
+```cs
+public DbSet<LineModel> Lines{ get; set; }
+```
+### 1. Procedura jako zdroj dat
+Poté lze v kontroleru využít DbSet<TEntity>.FromSqlRaw() nebo FromSqlInterpolated() metodu pro získání dat z uložených procedur. Např.
+```cs
+var name = "ex";
+
+var lines = context.Lines
+    .FromSqlRaw("EXECUTE dbo.Procedure {0}", name)
+    .ToList();
+```
+zavolá proceduru Procedure s parametrem name.
+Když je potřeba zobrazit hodnoty z více tabulek bude nutné vytvořit classu, která bude obsahovat všechny vlastnosti, které nám daná procedura vrací. Tu poté také přidáme do DbContextu a v kontroleru obdobně zavoláme.
+
+### 2. Edit
+V GET získáme model toho co chceme upravovat takto
+```cs
+var lineModel = await _context.Lines.FindAsync(id);
+```
+V POST poté ukládáme opět přes DbContext
+```cs
+_context.Update(lineModel);
+await _context.SaveChangesAsync();
+```
+Při editaci dat z procedury by bylo třeba využít metodu FromSqlRaw místo FindAsync
