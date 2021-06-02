@@ -32,7 +32,6 @@ namespace WebApplication1.Controllers
 
             ViewBag.lines = new SelectList(lines, "ID", "Name");
 
-
             String selectedLine = Request.Query["selected_line"].ToString();
 
             if (!String.IsNullOrEmpty(selectedLine))
@@ -51,6 +50,7 @@ namespace WebApplication1.Controllers
             }
 
             int pageSize = 3;
+            //var line = _context.Lines.FromSqlRaw("EXECUTE dbo.Procedure").ToList();
             return View(await PaginatedList<LineModel>.CreateAsync(lines.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
 
@@ -148,6 +148,7 @@ namespace WebApplication1.Controllers
                 {
                     if (!LineModelExists(lineModel.ID))
                     {
+                        TempData["Message"] = "NotFound";
                         return NotFound();
                     }
                     else
@@ -155,6 +156,7 @@ namespace WebApplication1.Controllers
                         throw;
                     }
                 }
+                TempData["Message"] = "Edit succesful";
                 return RedirectToAction(nameof(Index));
             }
             return View(lineModel);

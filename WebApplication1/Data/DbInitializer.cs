@@ -32,6 +32,23 @@ namespace WebApplication1.Data
             }
             context.SaveChanges();
 
+
+            if (context.Users.Any())
+            {
+                return;
+            }
+
+            var users = new UserModel[]
+            {
+            new UserModel{Name="Matej", LineID=1},
+            new UserModel{Name="Petr", LineID=2},
+            };
+            foreach (UserModel u in users)
+            {
+                context.Users.Add(u);
+            }
+            context.SaveChanges();
+
             var buggies = new BuggyModel[]
             {
             new BuggyModel{BuggyID=150,Name="A1"},

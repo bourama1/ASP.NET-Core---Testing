@@ -25,7 +25,7 @@
     <thead>
         <tr>
             <th>
-                <a asp-action="Index" asp-route-sortOrder="@ViewData["LineNameParm"]">Line Name</a>            
+                <a asp-action="Index" asp-route-sortOrder="@ViewData["LineNameParm"]">Line Name</a>
             </th>
             <th></th>
         </tr>
@@ -64,3 +64,11 @@
    class="btn btn-default @nextDisabled">
     Next
 </a>
+
+@{
+    string message = TempData["Message"] as string;
+    if (message != null)
+    {
+        <div>@message</div>
+    }
+}
