@@ -226,3 +226,18 @@ _context.Update(lineModel);
 await _context.SaveChangesAsync();
 ```
 Při editaci dat z procedury by bylo třeba využít metodu FromSqlRaw místo FindAsync
+## Flash Message
+Do controlleru stačí přidat TempData
+```cs
+TempData["Message"] = "Edit succesful";
+```
+a poté je v daném View zobrazit
+```cs
+@{
+    string message = TempData["Message"] as string;
+    if (message != null)
+    {
+        <div>@message</div>
+    }
+}
+```    
