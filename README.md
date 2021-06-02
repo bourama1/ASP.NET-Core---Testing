@@ -241,3 +241,36 @@ a poté je v daném View zobrazit
     }
 }
 ```    
+## Excel export
+Použit Nuget Package ClosedXML
+```cs    
+public IActionResult DownloadExcelDocument()
+        {
+            var lines = from l in _context.Lines
+                        select l;
+
+            string contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            string fileName = "lines.xlsx";
+            using (var workbook = new XLWorkbook())
+            {
+                IXLWorksheet worksheet = workbook.Worksheets.Add("Lines");
+                var v = typeof(LineModel).GetProperties();
+                for(int i = 0; i < v.Count(); i++)
+                {
+                    worksheet.Cell(1, i+1).Value = v.ElementAt(i).Name;
+                }
+
+                for (int i = 1; i <= lines.Count(); i++)
+                {
+                    worksheet.Cell(i + 1, 1).Value = lines.FirstOrDefault(m => m.ID == i).ID;
+                    worksheet.Cell(i + 1, 2).Value = lines.FirstOrDefault(m => m.ID == i).Name;
+                }
+                using (var stream = new MemoryStream())
+                {
+                    workbook.SaveAs(stream);
+                    var content = stream.ToArray();
+                    return File(content, contentType, fileName);
+                }
+            }
+        }
+```    
